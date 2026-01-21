@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Шахматка — Управление ЖК</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>Шахматка</h1>
+
+    <!-- Панель инструментов -->
+    <div class="toolbar">
+      <button id="btn-move">Переместить</button>
+      <button id="btn-copy">Копировать</button>
+      <button id="btn-edit">Изменить</button>
+      <button id="btn-delete">Удалить</button>
+      <button id="btn-logs">Логи действий</button>
+      <button id="btn-recalc" class="accent">Пересчитать номера</button>
+      <button id="btn-lasso">Лассо</button>
+      <button id="btn-cancel" class="accent" style="display: none;">Отмена</button>
+    </div>
+
+    <!-- Переключатели -->
+    <div class="controls">
+      <div>
+        <button id="btn-free" class="toggle-active">Только свободные</button>
+        <button id="btn-all">Все помещения</button>
+      </div>
+      <div>
+        <label>Показывать в ячейках:</label>
+        <select id="view-mode">
+          <option value="area">Площадь</option>
+          <option value="number">Номер</option>
+          <option value="rooms">Комнатность</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Подсказка -->
+    <div class="hint">
+      Подсказка: Нажмите на помещение, чтобы выделить. Кликните на этаж/стояк, чтобы выделить весь блок.
+    </div>
+
+    <!-- Шахматка -->
+    <div id="chessboard" class="chessboard"></div>
+  </div>
+
+  <!-- Модальное окно подтверждения -->
+  <div id="modal-confirm" class="modal">
+    <div class="modal-content">
+      <h2>Подтвердите действие</h2>
+      <p id="modal-message">Вы уверены, что хотите удалить 3 помещения?</p>
+      <label><input type="checkbox" id="dont-ask"> Не спрашивать снова</label>
+      <div class="modal-actions">
+        <button id="modal-cancel">Отменить</button>
+        <button id="modal-confirm-btn" class="accent">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно массового редактирования -->
+  <div id="modal-edit" class="modal">
+    <div class="modal-content" style="width: 500px;">
+      <h2>Массовое изменение</h2>
+      <p id="edit-count">Изменение 2 помещений</p>
+
+      <!-- Вкладки -->
+      <div class="tabs">
+        <div class="tab active" data-tab="main">Основные параметры</div>
+        <div class="tab" data-tab="extra">Доп. параметры</div>
+        <div class="tab" data-tab="price">Стоимость</div>
+      </div>
+
+      <div id="tab-main" class="tab-content active">
+        <div class="field">
+          <label>Статус</label>
+          <select id="edit-status">
+            <option>Свободно</option>
+            <option>Продано</option>
+            <option>Забронировано</option>
+          </select>
+          <small>Текущий статус: Свободно</small>
+        </div>
+        <div class="field">
+          <label>Площадь (м²)</label>
+          <input type="number" id="edit-area" value="52" />
+          <small>Текущая площадь: 52 м²</small>
+        </div>
+        <div class="field">
+          <label>Номер помещения</label>
+          <input type="text" id="edit-number" value="201" />
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button id="edit-cancel">Отменить</button>
+        <button id="edit-save" class="accent">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно логов -->
+  <div id="modal-logs" class="modal">
+    <div class="modal-content" style="width: 700px; max-height: 80vh; overflow: hidden;">
+      <h2>История изменений</h2>
+
+      <!-- Фильтр -->
+      <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+        <label>Фильтр:</label>
+        <select id="log-filter">
+          <option value="all">Все</option>
+          <option value="Добавление">Добавление</option>
+          <option value="Удаление">Удаление</option>
+          <option value="Изменение">Изменение</option>
+          <option value="Перемещение">Перемещение</option>
+          <option value="Система">Система</option>
+        </select>
+        <button id="clear-logs" style="background: #FF5252; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px;">Очистить</button>
+      </div>
+
+      <!-- Список логов -->
+      <div id="logs-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #DDD; border-radius: 6px; padding: 10px; background: #FAFAFA; font-size: 14px; line-height: 1.6;">
+      </div>
+
+      <div class="modal-actions" style="margin-top: 15px;">
+        <button id="close-logs">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
