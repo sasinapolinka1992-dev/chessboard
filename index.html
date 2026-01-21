@@ -1,136 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Шахматка — Управление ЖК</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Прототип — Шахматка (Массовые изменения)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Шахматка</h1>
-
-    <!-- Панель инструментов -->
-    <div class="toolbar">
-      <button id="btn-move">Переместить</button>
-      <button id="btn-copy">Копировать</button>
-      <button id="btn-edit">Изменить</button>
-      <button id="btn-delete">Удалить</button>
-      <button id="btn-logs">Логи действий</button>
-      <button id="btn-recalc" class="accent">Пересчитать номера</button>
-      <button id="btn-lasso">Лассо</button>
-      <button id="btn-cancel" class="accent" style="display: none;">Отмена</button>
-    </div>
-
-    <!-- Переключатели -->
-    <div class="controls">
-      <div>
-        <button id="btn-free" class="toggle-active">Только свободные</button>
-        <button id="btn-all">Все помещения</button>
+  <div class="app">
+      <header class="topbar">
+      <h1>Шахматка — Массовые изменения</h1>
+      <div class="top-actions">
+        <label class="toggle" aria-label="Переключатель: Показывать только свободные">
+          <input id="freeOnly" type="checkbox" checked>
+          <span class="switch"></span>
+          <span class="label">Показывать только свободные</span>
+        </label>
       </div>
-      <div>
-        <label>Показывать в ячейках:</label>
-        <select id="view-mode">
-          <option value="area">Площадь</option>
-          <option value="number">Номер</option>
-          <option value="rooms">Комнатность</option>
-        </select>
-      </div>
-    </div>
+    </header>
 
-    <!-- Подсказка -->
-    <div class="hint">
-      Подсказка: Нажмите на помещение, чтобы выделить. Кликните на этаж/стояк, чтобы выделить весь блок.
-    </div>
-
-    <!-- Шахматка -->
-    <div id="chessboard" class="chessboard"></div>
-  </div>
-
-  <!-- Модальное окно подтверждения -->
-  <div id="modal-confirm" class="modal">
-    <div class="modal-content">
-      <h2>Подтвердите действие</h2>
-      <p id="modal-message">Вы уверены, что хотите удалить 3 помещения?</p>
-      <label><input type="checkbox" id="dont-ask"> Не спрашивать снова</label>
-      <div class="modal-actions">
-        <button id="modal-cancel">Отменить</button>
-        <button id="modal-confirm-btn" class="accent">Подтвердить</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модальное окно массового редактирования -->
-  <div id="modal-edit" class="modal">
-    <div class="modal-content" style="width: 500px;">
-      <h2>Массовое изменение</h2>
-      <p id="edit-count">Изменение 2 помещений</p>
-
-      <!-- Вкладки -->
-      <div class="tabs">
-        <div class="tab active" data-tab="main">Основные параметры</div>
-        <div class="tab" data-tab="extra">Доп. параметры</div>
-        <div class="tab" data-tab="price">Стоимость</div>
-      </div>
-
-      <div id="tab-main" class="tab-content active">
-        <div class="field">
-          <label>Статус</label>
-          <select id="edit-status">
-            <option>Свободно</option>
-            <option>Продано</option>
-            <option>Забронировано</option>
-          </select>
-          <small>Текущий статус: Свободно</small>
+    <main class="container">
+      <section class="toolbar">
+        <div class="left">
+          <button class="btn primary" id="btn-move" title="Перемещение — выберите элемент(ы), затем цель вставки. Для отмены — 'Отмена'" aria-label="Кнопка Переместить">Переместить</button>
+          <button class="btn" id="btn-copy" title="Копировать — выберите источник и цель вставки; номера обновляются автоматически" aria-label="Кнопка Копировать">Копировать</button>
+          <button class="btn" id="btn-edit" title="Массовое изменение — выберите помещения и задайте параметры в модальном окне" aria-label="Кнопка Изменить">Изменить</button>
+          <button class="btn danger" id="btn-delete" title="Удалить — выделите помещения и подтвердите удаление" aria-label="Кнопка Удалить">Удалить</button>
+          <button class="btn" id="btn-logs" title="Открыть журнал действий — история операций" aria-label="Кнопка Логи">Логи действий</button>
         </div>
-        <div class="field">
-          <label>Площадь (м²)</label>
-          <input type="number" id="edit-area" value="52" />
-          <small>Текущая площадь: 52 м²</small>
+        <div class="right">
+          <div class="dropdown">
+            <button class="btn" id="displayModeBtn">Показать: Номер ▾</button>
+            <div class="dropdown-menu" id="displayModeMenu">
+              <div data-mode="number" class="dropdown-item">Номер</div>
+              <div data-mode="area" class="dropdown-item">Площадь</div>
+              <div data-mode="rooms" class="dropdown-item">Комнатность</div>
+            </div>
+          </div>
+
+          <button class="btn primary" id="btn-recount" title="Пересчитать номера помещений автоматически" aria-label="Кнопка Пересчитать номера">Пересчитать номера</button>
+          <button class="btn" id="btn-save" style="display:none" title="Сохранить изменения" aria-label="Кнопка Сохранить">Сохранить</button>
+          <button class="btn" id="btn-scn-delete" title="Пример сценария: Удаление">Пример: Удаление</button>
+          <button class="btn" id="btn-scn-copy" title="Пример сценария: Копирование">Пример: Копирование</button>
         </div>
-        <div class="field">
-          <label>Номер помещения</label>
-          <input type="text" id="edit-number" value="201" />
+      </section>
+
+      <section class="chessboard-wrap">
+        <div class="chess-controls">
+          <button class="small" id="addColTop" title="Добавить стояк сверху">+ сверху</button>
+          <button class="small" id="addRowLeft" title="Добавить этаж слева">+ этаж</button>
+          <button class="small" id="addColRight" title="Добавить секцию справа">+ секция</button>
+        </div>
+
+        <div class="chessboard" id="chessboard" aria-label="Шахматка">
+          <!-- grid rendered by JS -->
+        </div>
+
+        <div id="zone-cancel" class="zone" title="Зона отмены: перетащите сюда, чтобы отменить действие">Зона отмены</div>
+
+        <div class="annotation">Наведите на элементы для подсказок. Клик — выделить.</div>
+      </section>
+
+      <section class="hintbar" id="hintbar">Выберите помещения, затем нажмите 'Удалить'. Для отмены — 'Отмена'.</section>
+    </main>
+
+    <!-- slides/modals as separate screens -->
+    <div class="slides" id="slides">
+      <div class="slide" id="slide-main">
+        <!-- main slide is index view -->
+      </div>
+
+      <div class="slide" id="slide-add" aria-hidden="true">
+        <div class="modal left">
+          <h2>Добавить помещения — Параметры</h2>
+          <div class="form-row"><label>Статус:</label><select id="add-status"><option>Свободно</option><option>Продано</option></select></div>
+          <div class="form-row"><label>Площадь (м²):</label><input id="add-area" type="text" value="45"></div>
+          <div class="form-row"><label>Номер (префикс):</label><input id="add-number" type="text" value="10"></div>
+          <p class="helper" style="font-size:13px;color:#7F7F7E;margin-top:8px">Примечание: указанные параметры применяются к создаваемым помещениям. Номер можно изменить вручную после сохранения.</p>
+          <div class="modal-actions"><button class="btn primary" id="add-save">Сохранить</button><button class="btn" id="add-cancel">Отменить</button></div>
         </div>
       </div>
 
-      <div class="modal-actions" style="margin-top: 20px;">
-        <button id="edit-cancel">Отменить</button>
-        <button id="edit-save" class="accent">Сохранить</button>
+      <div class="slide" id="slide-confirm" aria-hidden="true">
+        <div class="modal center">
+          <h2>Подтвердите изменения</h2>
+          <p id="confirm-text">Вы уверены, что хотите сохранить изменения? Проверьте корректность данных.</p>
+          <p id="confirm-count" style="font-weight:600;margin-top:6px">[Кол-во] помещений будет изменено.</p>
+          <p style="font-size:13px;color:#7F7F7E;margin-top:6px">Если вы перейдёте в другой раздел без сохранения — изменения будут утеряны.</p>
+          <div class="modal-actions"><button class="btn primary" id="confirm-yes">Подтвердить</button><button class="btn" id="confirm-no">Отменить</button></div>
+        </div>
       </div>
+
+      <div class="slide" id="slide-logs" aria-hidden="true">
+        <div class="modal right">
+          <h2>Логи действий</h2>
+          <div class="log-list" id="logList">
+            <!-- logs by JS -->
+          </div>
+          <div class="modal-actions"><button class="btn" id="logs-close">Закрыть</button></div>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-scenario-delete" aria-hidden="true">
+        <div class="modal center">
+          <h2>Сценарий: Удаление (демо)</h2>
+          <ol>
+            <li>Активировать режим удаления</li>
+            <li>Выделить несколько помещений (клик / лассо)</li>
+            <li>Нажать «Удалить» — открыть подтверждение</li>
+            <li>Подтвердить удаление</li>
+          </ol>
+          <div class="modal-actions">
+            <button class="btn" id="scn-delete-step1">Шаг 1: Включить режим удаления</button>
+            <button class="btn" id="scn-delete-step2">Шаг 2: Выделить примеры</button>
+            <button class="btn primary" id="scn-delete-step3">Шаг 3: Удалить (показать подтверждение)</button>
+            <button class="btn" id="scn-delete-close">Закрыть</button>
+            <div class="slide-nav">
+              <button class="btn ghost" id="scn-delete-prev">← Назад</button>
+              <button class="btn ghost" id="scn-delete-next">Далее →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-scenario-copy" aria-hidden="true">
+        <div class="modal center">
+          <h2>Сценарий: Копирование (демо)</h2>
+          <ol>
+            <li>Выделить помещение/стояк</li>
+            <li>Выбрать цель вставки</li>
+            <li>Подтвердить копирование</li>
+          </ol>
+          <div class="modal-actions">
+            <button class="btn" id="scn-copy-step1">Шаг 1: Активировать копирование</button>
+            <button class="btn" id="scn-copy-step2">Шаг 2: Выбрать цель</button>
+            <button class="btn primary" id="scn-copy-step3">Шаг 3: Подтвердить (показать подтверждение)</button>
+            <button class="btn" id="scn-copy-close">Закрыть</button>
+            <div class="slide-nav">
+              <button class="btn ghost" id="scn-copy-prev">← Назад</button>
+              <button class="btn ghost" id="scn-copy-next">Далее →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
+
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <footer class="footer">
+      <div>Прототип — имитация кликов, модалей и drag&drop. Mobile: меню сворачивается.</div>
+    </footer>
   </div>
 
-  <!-- Модальное окно логов -->
-  <div id="modal-logs" class="modal">
-    <div class="modal-content" style="width: 700px; max-height: 80vh; overflow: hidden;">
-      <h2>История изменений</h2>
-
-      <!-- Фильтр -->
-      <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
-        <label>Фильтр:</label>
-        <select id="log-filter">
-          <option value="all">Все</option>
-          <option value="Добавление">Добавление</option>
-          <option value="Удаление">Удаление</option>
-          <option value="Изменение">Изменение</option>
-          <option value="Перемещение">Перемещение</option>
-          <option value="Система">Система</option>
-        </select>
-        <button id="clear-logs" style="background: #FF5252; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px;">Очистить</button>
-      </div>
-
-      <!-- Список логов -->
-      <div id="logs-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #DDD; border-radius: 6px; padding: 10px; background: #FAFAFA; font-size: 14px; line-height: 1.6;">
-      </div>
-
-      <div class="modal-actions" style="margin-top: 15px;">
-        <button id="close-logs">Закрыть</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
