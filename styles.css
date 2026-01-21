@@ -16,13 +16,34 @@
 .chessboard-wrap{padding:20px;border-radius:6px;border:1px solid #DDD;background:#FFFFFF;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
 .chess-controls{display:flex;gap:8px;margin-bottom:10px}
 .chessboard{overflow:auto;border-radius:6px;padding:10px;background:#fff}
+
+/* Section boards layout */
+.section-board{display:inline-block;vertical-align:top;width:420px;margin-right:20px}
+.section-title{font-weight:700;color:#7F7F7E;margin-bottom:8px}
+.section-header{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.section-header .corner{width:72px}
+.section-row{display:flex;gap:10px;margin-bottom:8px}
+.floor-label{width:56px;display:flex;align-items:center;gap:8px}
+.floor-label .floor-radio{width:14px;height:14px;border-radius:50%;border:2px solid #DDD;display:inline-block;margin-right:6px;background:#fff}
+.floor-label-text{font-size:13px;color:#7F7F7E}
+.cell.empty{background:transparent;border:1px dashed #EEE}
+
+/* Info banner similar to screenshot */
+.info-banner{display:flex;justify-content:space-between;align-items:center;padding:14px;border-radius:6px;background:#F0F6FB;border:1px solid #DDEBF6;margin-bottom:12px}
+.info-banner .info-content{color:#1F3550}
+.info-banner .info-content #infoTitle{display:block;color:#0E57A3;margin-bottom:6px}
+.info-banner .info-actions{display:flex;gap:8px}
 .grid{display:grid;gap:10px}
 .cell{width:120px;height:80px;background:#FFF;border:1px solid #DDD;border-radius:6px;padding:8px;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer}
 .cell.free{border-color:#69C}
 .cell.sold{opacity:0.6}
-.cell .meta{font-size:12px;color:#7F7F7E}
-.cell .main{font-weight:600;font-size:15px;color:#333}
-.cell.selected{outline:2px dashed #69C}
+.cell .meta{font-size:12px;color:#7F7F7E;display:flex;gap:6px;align-items:center;margin-top:6px}
+.cell .main{font-weight:600;font-size:14px;color:#333;display:block}
+.status{display:inline-block;padding:4px 7px;border-radius:4px;font-size:12px;font-weight:700}
+.status.free{background:#E6FBF5;color:#0A8B56;border:1px solid rgba(10,139,86,0.08)}
+.status.sold{background:#F3F4F6;color:#7F7F7E;border:1px solid rgba(127,127,126,0.08)}
+.status.blocked{background:#FFF2E6;color:#D36C18;border:1px solid rgba(211,108,24,0.08)}
+.cell.selected{border:2px solid #69C;box-shadow:0 6px 18px rgba(105,153,204,0.08);outline:none}
 .headerCell{background:#EAEAEA;padding:10px;border-radius:6px;border:1px solid #DDD;color:#333;font-weight:600}
 .sideCell{background:#EAEAEA;padding:10px;border-radius:6px;border:1px solid #DDD;color:#333;font-weight:600}
 .annotation{margin-top:8px;color:#7F7F7E;font-size:13px}
