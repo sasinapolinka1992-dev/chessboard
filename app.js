@@ -1,7 +1,8 @@
 // Основная логика прототипа (имитация)
 const state = {
-  floors: 4, // horizontal (этажи)
-  sections: 3, // vertical (секции/стояки)
+  numSections: 2, // секции (A, B)
+  numStoaks: 3, // стояки (колонки внутри секции)
+  numFloors: 5, // этажи (строки внутри секции)
   displayMode: 'number',
   freeOnly: true,
   cells: [],
@@ -9,88 +10,104 @@ const state = {
   logs: []
 }
 
-function uid(r,c){return `r${r}c${c}`}
+function uid(section,floor,stoak){return `s${section}f${floor}t${stoak}`}
 
 function seed(){
-  // create placeholder data: floors across columns, sections rows (3 sections x 4 floors)
+  // data: sections -> floors -> stoaks
   state.cells = []
   let base = 100
-  for(let r=0;r<state.sections;r++){
-    const row = []
-    for(let c=0;c<state.floors;c++){
-      const rooms = []
-      // 2 rooms per cell sample
-      for(let k=0;k<2;k++){
-        const number = base + (c+1)*10 + r*2 + k
-        const status = (Math.random()>0.75) ? 'Продано' : 'Свободно'
-        rooms.push({id:uid(r,c)+"-"+k, number: number, area: 38 + k*7, rooms: 1 + k, status})
+  for(let s=0;s<state.numSections;s++){
+    const sec = []
+    for(let f=0;f<state.numFloors;f++){
+      const row = []
+      for(let t=0;t<state.numStoaks;t++){
+        const rooms = []
+        // single room per cell for simplicity
+        const number = base + (s*100) + (state.numFloors - f)*10 + t
+        const status = (Math.random()>0.7) ? 'Продано' : 'Свободно'
+        rooms.push({id:uid(s,f,t), number: number, area: 38 + t*5, rooms: 1 + (t%3), status})
+        row.push({section:s,floor:f,stoak:t,rooms})
       }
-      row.push({row:r,col:c,rooms})
+      sec.push(row)
     }
-    state.cells.push(row)
+    state.cells.push(sec)
   }
 }
 
 function renderChess(){
   const wrap = document.getElementById('chessboard')
   wrap.innerHTML=''
-  const grid = document.createElement('div')
-  grid.className='grid'
-  // build header row with floor labels (horizontal)
-  const headerRow = document.createElement('div')
-  headerRow.style.display='grid'
-  headerRow.style.gridTemplateColumns = `repeat(${state.floors}, 120px)`
-  headerRow.style.gap = '10px'
-  for(let c=0;c<state.floors;c++){
-    const h = document.createElement('div')
-    h.className='headerCell'
-    h.title = 'Нажмите для выбора всех помещений этажа'
-    h.textContent = 'Этаж ' + (c+1)
-    h.dataset.col = c
-    h.addEventListener('click',()=>toggleSelectColumn(c))
-    headerRow.appendChild(h)
-  }
-  wrap.appendChild(headerRow)
+  // render each section as separate board (side-by-side)
+  for(let s=0;s<state.numSections;s++){
+    const secWrap = document.createElement('div')
+    secWrap.className = 'section-board'
+    const title = document.createElement('div')
+    title.className='section-title'
+    title.textContent = 'Секция ' + String.fromCharCode(65+s)
+    secWrap.appendChild(title)
 
-  // rows
-  for(let r=0;r<state.sections;r++){
-    const rowWrap = document.createElement('div')
-    rowWrap.style.display='flex'
-    rowWrap.style.gap='10px'
-    // side label
-    const side = document.createElement('div')
-    side.className='sideCell'
-    side.textContent = 'Стояк ' + (r+1)
-    side.title='Нажмите для выбора всех помещений стояка (секции)'
-    side.addEventListener('click',()=>toggleSelectRow(r))
-    rowWrap.appendChild(side)
-
-    for(let c=0;c<state.floors;c++){
-      const cell = state.cells[r][c]
-      // filter
-      const anyFree = cell.rooms.some(x=>x.status==='Свободно')
-      if(state.freeOnly && !anyFree) continue
-      const el = document.createElement('div')
-      el.className = 'cell ' + (anyFree? 'free':'sold')
-      el.dataset.r = r
-      el.dataset.c = c
-      el.id = uid(r,c)
-      el.title = 'Клик — выделить (или снять выделение). Двойной клик — открыть редактирование помещения.'
-      el.addEventListener('click',onCellClick)
-      el.addEventListener('dblclick',onCellDblClick)
-
-      const main = document.createElement('div')
-      main.className='main'
-      main.textContent = cell.rooms.map(x=>displayFor(x)).join(' | ')
-      const meta = document.createElement('div')
-      meta.className='meta'
-      meta.textContent = cell.rooms.map(x=>x.status).join(', ')
-
-      el.appendChild(main);el.appendChild(meta)
-      rowWrap.appendChild(el)
+    // header: stoaks
+    const header = document.createElement('div')
+    header.className='section-header'
+    const emptyCorner = document.createElement('div'); emptyCorner.className='corner'
+    header.appendChild(emptyCorner)
+    for(let t=0;t<state.numStoaks;t++){
+      const h = document.createElement('div'); h.className='headerCell'; h.textContent = 'СТОЯК ' + (t+1); h.title='Нажмите для выбора стояка'; h.dataset.stoak=t; h.addEventListener('click',()=>toggleSelectStoack(s,t)); header.appendChild(h)
     }
-    wrap.appendChild(rowWrap)
+    secWrap.appendChild(header)
+
+    // floors (descending: top floor first)
+    for(let f=0;f<state.numFloors;f++){
+      const floorIndex = f // 0 top
+      const row = document.createElement('div'); row.className='section-row'
+      const floorNum = state.numFloors - f
+      const side = document.createElement('div'); side.className='floor-label';
+      const radio = document.createElement('input'); radio.type='radio'; radio.name='floor-select-'+s; radio.className='floor-radio'; radio.id=`s${s}-floor-${floorNum}`
+      const lab = document.createElement('label'); lab.htmlFor = radio.id; lab.innerHTML = floorNum + ' эт.'; lab.className='floor-label-text'
+      side.appendChild(radio); side.appendChild(lab)
+      side.addEventListener('click',()=>{ toggleSelectFloor(s,floorIndex) })
+      row.appendChild(side)
+
+      for(let t=0;t<state.numStoaks;t++){
+        const cell = state.cells[s][f][t]
+        const anyFree = cell.rooms.some(x=>x.status==='Свободно')
+        if(state.freeOnly && !anyFree){
+          const empty = document.createElement('div'); empty.className='cell empty'; row.appendChild(empty); continue
+        }
+        const el = document.createElement('div')
+        el.className = 'cell ' + (anyFree? 'free':'sold')
+        el.dataset.s = s; el.dataset.f = f; el.dataset.t = t
+        el.id = uid(s,f,t)
+        el.title = 'Клик — выделить (или снять выделение). Двойной клик — открыть редактирование помещения.'
+        el.addEventListener('click',onCellClick)
+        el.addEventListener('dblclick',onCellDblClick)
+        const main = document.createElement('div'); main.className='main'; main.textContent = cell.rooms.map(x=>displayFor(x)).join(' | ')
+        const meta = document.createElement('div'); meta.className='meta';
+        meta.innerHTML = cell.rooms.map(x=>{
+          const cls = x.status==='Свободно' ? 'free' : (x.status==='Продано' ? 'sold' : 'blocked')
+          const label = x.status==='Свободно' ? 'СВОБ' : (x.status==='Продано' ? 'ПРОД' : 'ЗАБР')
+          return `<span class="status ${cls}" title="${x.status}">${label}</span>`
+        }).join(' ')
+        el.appendChild(main); el.appendChild(meta); row.appendChild(el)
+      }
+      secWrap.appendChild(row)
+    }
+    wrap.appendChild(secWrap)
   }
+}
+
+// Info banner control
+function showInfoBanner(mode){
+  const banner = document.getElementById('infoBanner')
+  const title = document.getElementById('infoTitle')
+  const text = document.getElementById('infoText')
+  if(!banner) return
+  if(!mode){ banner.style.display='none'; return }
+  banner.style.display='flex'
+  if(mode==='move'){ title.textContent='Перемещение'; text.textContent='Выбран элемент. Теперь выберите целевую позицию. Для отмены — Отмена.' }
+  else if(mode==='delete'){ title.textContent='Удаление — режим активен'; text.textContent='Выберите помещения для удаления. Затем нажмите «Сохранить» или «Отмена».' }
+  else if(mode==='copy'){ title.textContent='Копирование — режим активен'; text.textContent='Выберите источник, затем цель вставки. Номера пересчитаются автоматически.' }
+  else if(mode==='edit'){ title.textContent='Массовое изменение'; text.textContent='Выберите помещения и задайте параметры в модальном окне.' }
 }
 
 function displayFor(room){
@@ -113,18 +130,28 @@ function onCellDblClick(e){
 }
 
 function toggleSelectColumn(c){
-  // select all cells in column c
-  for(let r=0;r<state.sections;r++){
-    const id = uid(r,c)
+  // legacy: noop for new layout
+  console.warn('toggleSelectColumn deprecated')
+}
+function toggleSelectRow(r){
+  console.warn('toggleSelectRow deprecated')
+}
+
+function toggleSelectStoack(section,stoak){
+  // select all cells in given stoak (column) within section
+  for(let f=0; f<state.numFloors; f++){
+    const id = uid(section,f,stoak)
     state.selected.add(id)
     const el = document.getElementById(id)
     if(el) el.classList.add('selected')
   }
   updateHint()
 }
-function toggleSelectRow(r){
-  for(let c=0;c<state.floors;c++){
-    const id = uid(r,c)
+
+function toggleSelectFloor(section,floorIndex){
+  // select all cells in given floorIndex (0 top) within section
+  for(let t=0; t<state.numStoaks; t++){
+    const id = uid(section,floorIndex,t)
     state.selected.add(id)
     const el = document.getElementById(id)
     if(el) el.classList.add('selected')
@@ -149,6 +176,7 @@ function setMode(m){
   state.mode = m
   // show cancel button when mode active
   ensureCancel(m)
+  showInfoBanner(m)
 }
 function ensureCancel(m){
   let btn = document.getElementById('btn-cancel')
@@ -299,18 +327,18 @@ function initUI(){
 
   // scenario delete steps
   document.getElementById('scn-delete-step1').addEventListener('click',()=>{ setMode('delete'); log('Scenario: activated delete mode'); })
-  document.getElementById('scn-delete-step2').addEventListener('click',()=>{ scenarioSelectExample(['r0c0','r1c1','r2c2']) })
+  document.getElementById('scn-delete-step2').addEventListener('click',()=>{ scenarioSelectExample(['s0f0t0','s1f1t1','s0f2t2']) })
   document.getElementById('scn-delete-step3').addEventListener('click',()=>{ openSlide('slide-confirm'); document.getElementById('confirm-text').textContent = 'Подтвердите удаление выделенных помещений.'; document.getElementById('confirm-count').textContent = state.selected.size + ' помещений будет удалено.'; runDeleteScenarioAnimation(Array.from(state.selected)) })
   document.getElementById('scn-delete-close').addEventListener('click',()=>{ closeSlides(); state.selected.clear(); document.querySelectorAll('.cell.selected').forEach(x=>x.classList.remove('selected')); setMode(null); renderChess() })
 
   // scenario copy steps
   document.getElementById('scn-copy-step1').addEventListener('click',()=>{ setMode('copy'); log('Scenario: activated copy mode'); })
-  document.getElementById('scn-copy-step2').addEventListener('click',()=>{ scenarioSelectExample(['r0c1']) })
+  document.getElementById('scn-copy-step2').addEventListener('click',()=>{ scenarioSelectExample(['s0f0t1']) })
   document.getElementById('scn-copy-step3').addEventListener('click',()=>{ openSlide('slide-confirm'); document.getElementById('confirm-text').textContent = 'Подтвердите копирование выделенных помещений.'; document.getElementById('confirm-count').textContent = state.selected.size + ' помещений будет скопировано.'; // animate copy from first selected to example target
     const sel = Array.from(state.selected)
     if(sel.length>0){ const src = sel[0]; // choose a target cell visually (e.g., r0c2) - pick next cell
-      const target = document.getElementById('r0c2') || document.querySelector('.cell')
-      runCopyScenarioAnimation(src, target && target.id ? target.id : 'r0c2') }
+      const target = document.getElementById('s0f0t2') || document.querySelector('.cell')
+      runCopyScenarioAnimation(src, target && target.id ? target.id : 's0f0t2') }
   })
   document.getElementById('scn-copy-close').addEventListener('click',()=>{ closeSlides(); state.selected.clear(); document.querySelectorAll('.cell.selected').forEach(x=>x.classList.remove('selected')); setMode(null); renderChess() })
 
@@ -328,6 +356,12 @@ function initUI(){
 
   // overlay click closes
   document.getElementById('overlay').addEventListener('click',closeSlides)
+
+  // info banner actions
+  const infoDone = document.getElementById('infoDone')
+  const infoCancel = document.getElementById('infoCancel')
+  if(infoDone) infoDone.addEventListener('click', ()=>{ log('Info: done'); state.mode=null; showInfoBanner(null); document.getElementById('btn-save').style.display='inline-block' })
+  if(infoCancel) infoCancel.addEventListener('click', ()=>{ log('Info: cancel'); state.mode=null; showInfoBanner(null); document.querySelectorAll('.cell.selected').forEach(x=>x.classList.remove('selected')); state.selected.clear(); updateHint() })
 
   // basic drag simulation: when in move mode, click source then click target
   document.getElementById('chessboard').addEventListener('click',e=>{
