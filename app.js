@@ -10,6 +10,9 @@ const state = {
   logs: []
 }
 
+// drag state for move interactions
+const dragState = { active:false, sourceId:null, ghost:null, currentTarget:null, moveHandler:null, upHandler:null }
+
 function uid(section,floor,stoak){return `s${section}f${floor}t${stoak}`}
 
 function seed(){
@@ -116,6 +119,21 @@ function displayFor(room){
   return room.rooms+'к'
 }
 
+function parseUid(id){
+  // expects form s{section}f{floor}t{stoak}
+  const m = id && id.match(/^s(\d+)f(\d+)t(\d+)$/)
+  if(!m) return null
+  return {s:parseInt(m[1],10), f:parseInt(m[2],10), t:parseInt(m[3],10)}
+}
+
+function swapCells(idA, idB){
+  const a = parseUid(idA); const b = parseUid(idB)
+  if(!a || !b) return
+  const temp = state.cells[a.s][a.f][a.t]
+  state.cells[a.s][a.f][a.t] = state.cells[b.s][b.f][b.t]
+  state.cells[b.s][b.f][b.t] = temp
+}
+
 function onCellClick(e){
   const id = e.currentTarget.id
   if(state.mode==='delete' || state.mode==='select' || state.mode==='move' || state.mode==='copy' || state.mode==='edit'){
@@ -127,6 +145,51 @@ function onCellClick(e){
 function onCellDblClick(e){
   // open edit modal slide
   openSlide('slide-add')
+}
+
+function startDrag(startEl, ev){
+  if(!startEl) return
+  dragState.active = true
+  dragState.sourceId = startEl.id
+  // create ghost
+  const ghost = startEl.cloneNode(true)
+  ghost.classList.add('drag-ghost')
+  document.body.appendChild(ghost)
+  dragState.ghost = ghost
+  // position
+  function onMove(me){
+    ghost.style.left = me.clientX + 'px'
+    ghost.style.top = me.clientY + 'px'
+    // highlight potential target
+    const under = document.elementFromPoint(me.clientX, me.clientY)
+    const cell = under && under.closest ? under.closest('.cell') : null
+    if(dragState.currentTarget && dragState.currentTarget !== cell){ dragState.currentTarget.classList.remove('drop-target'); dragState.currentTarget = null }
+    if(cell && cell.id !== dragState.sourceId){ dragState.currentTarget = cell; cell.classList.add('drop-target') }
+  }
+  function onUp(ue){
+    document.removeEventListener('pointermove', onMove)
+    document.removeEventListener('pointerup', onUp)
+    // perform drop
+    const target = dragState.currentTarget
+    if(target && target.id !== dragState.sourceId){
+      // swap in data model and re-render
+      swapCells(dragState.sourceId, target.id)
+      renderChess()
+      log('Moved '+dragState.sourceId+' → '+target.id)
+      // mark changed visually
+      const tgt = document.getElementById(target.id)
+      const src = document.getElementById(dragState.sourceId)
+      if(tgt) tgt.classList.add('changed')
+      if(src) src.classList.add('changed')
+    }
+    // cleanup
+    if(dragState.currentTarget) dragState.currentTarget.classList.remove('drop-target')
+    if(dragState.ghost){ dragState.ghost.remove() }
+    dragState.active=false; dragState.sourceId=null; dragState.ghost=null; dragState.currentTarget=null
+    updateHint()
+  }
+  document.addEventListener('pointermove', onMove)
+  document.addEventListener('pointerup', onUp)
 }
 
 function toggleSelectColumn(c){
@@ -363,73 +426,10 @@ function initUI(){
   if(infoDone) infoDone.addEventListener('click', ()=>{ log('Info: done'); state.mode=null; showInfoBanner(null); document.getElementById('btn-save').style.display='inline-block' })
   if(infoCancel) infoCancel.addEventListener('click', ()=>{ log('Info: cancel'); state.mode=null; showInfoBanner(null); document.querySelectorAll('.cell.selected').forEach(x=>x.classList.remove('selected')); state.selected.clear(); updateHint() })
 
-  // basic drag simulation: when in move mode, click source then click target
-  document.getElementById('chessboard').addEventListener('click',e=>{
-    if(state.mode==='move'){
-      const target = e.target.closest('.cell')
-      if(!target) return
-      // if no source selected, make this source
-      if(!state.moveSource){
-        state.moveSource = target.id
-        target.classList.add('selected')
-        updateHint();
-      } else {
-        // perform simulate move
-        simulateDrag(state.moveSource,target)
-        log('Moved '+state.moveSource+' to '+target.id+' (simulated)')
-        // mark both as changed (outline)
-        target.classList.add('selected')
-        document.getElementById(state.moveSource).classList.add('changed')
-        state.moveSource = null
-      }
-    }
-  })
-
-  // lasso (simple rectangle draw)
-  let lasso = null
-  let lassoEl = null
-  document.getElementById('chessboard').addEventListener('pointerdown', (e)=>{
-    if(state.mode!=='select' && state.mode!=='delete') return
-    lasso = {x0:e.clientX,y0:e.clientY}
-    lassoEl = document.createElement('div'); lassoEl.className='lasso'; lassoEl.style.position='fixed'; lassoEl.style.border='2px dashed #69C'; lassoEl.style.background='rgba(105,153,204,0.06)'; lassoEl.style.zIndex=9999; document.body.appendChild(lassoEl)
-    function move(ev){
-      const x = Math.min(ev.clientX, lasso.x0); const y = Math.min(ev.clientY, lasso.y0); const w=Math.abs(ev.clientX-lasso.x0); const h=Math.abs(ev.clientY-lasso.y0);
-      lassoEl.style.left = x+'px'; lassoEl.style.top = y+'px'; lassoEl.style.width = w+'px'; lassoEl.style.height = h+'px'
-    }
-    function up(ev){
-      move(ev)
-      // select intersecting cells
-      document.querySelectorAll('.cell').forEach(cell=>{
-        const r = cell.getBoundingClientRect();
-        const lx = parseFloat(lassoEl.style.left); const ly = parseFloat(lassoEl.style.top); const lw = parseFloat(lassoEl.style.width); const lh = parseFloat(lassoEl.style.height);
-        if(r.left<lx+lw && r.right>lx && r.top<ly+lh && r.bottom>ly){ cell.classList.add('selected'); state.selected.add(cell.id) }
-      })
-      lassoEl.remove(); lasso=null; document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); updateHint()
-    }
-    document.addEventListener('pointermove',move); document.addEventListener('pointerup',up)
-  })
-}
-
-// helper to select example cells by ids and highlight them
-function scenarioSelectExample(list){
-  // clear previous
-  state.selected.clear(); document.querySelectorAll('.cell.selected').forEach(x=>x.classList.remove('selected'))
-  list.forEach(id=>{
-    // id may be like 'r0c0' or raw; ensure element exists
-    const el = document.getElementById(id)
-    if(el){ el.classList.add('selected'); state.selected.add(id) }
-  })
-  updateHint()
-}
-
-// init
-seed();renderChess();initUI();
-
-// warn on unload if unsaved changes exist
-window.addEventListener('beforeunload', (e)=>{
-  const hasUnsaved = state.selected.size>0 || document.querySelectorAll('.cell.changed').length>0
-  if(hasUnsaved){ e.preventDefault(); e.returnValue = ''; }
-})
-
-// small CSS for dynamic lasso/changed
-const style = document.createElement('style'); style.innerHTML = `.lasso{pointer-events:none}.cell.changed{box-shadow:0 0 0 2px rgba(105,153,204,0.3) inset}`; document.head.appendChild(style)
+  // Drag-and-drop move: pointer-driven
+  document.getElementById('chessboard').addEventListener('pointerdown', e=>{
+    if(state.mode !== 'move') return
+    const cell = e.target.closest('.cell')
+    if(!cell) return
+    e.preventDefault()
+    // if cell is not selected, select it as source
