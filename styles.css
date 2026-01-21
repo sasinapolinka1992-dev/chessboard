@@ -81,6 +81,10 @@
 
 .cell.changed{box-shadow:0 0 0 2px rgba(105,153,204,0.3) inset}
 
+/* Drag ghost and drop target styles */
+.drag-ghost{position:fixed;pointer-events:none;opacity:0.92;transform:translate(-50%,-50%);z-index:10000;border:2px dashed rgba(105,153,204,0.6);border-radius:6px;background:rgba(255,255,255,0.95);padding:6px}
+.cell.drop-target{box-shadow:0 0 0 3px rgba(10,139,86,0.12) inset;border-color:#0A8B56}
+
 /* Slide transitions */
 .slides .slide{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;opacity:0;transform:translateX(30px);transition:opacity .32s ease, transform .32s ease;pointer-events:none}
 .slides .slide.active{opacity:1;transform:translateX(0);pointer-events:auto}
